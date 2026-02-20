@@ -16,7 +16,10 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Public Route */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected Routes inside DashboardLayout */}
           <Route
             element={
               <ProtectedRoute>
@@ -30,14 +33,6 @@ export function App() {
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/announcements" element={<AnnouncementsPage />} />
             <Route
-              path="/users"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <UsersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/courses"
               element={
                 <ProtectedRoute allowedRoles={['admin', 'teacher']}>
@@ -45,7 +40,17 @@ export function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
+
+          {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>

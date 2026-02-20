@@ -1,146 +1,95 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import {
-  auth,
-  googleProvider,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
+// src/context/AuthContext.tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth } from '../firebase-config';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
   signOut as firebaseSignOut,
-  type User,
-} from '@/config/firebase';
-import { getUserByEmail } from '@/api/userService';
-import type { UserProfile } from '@/types';
+  User
+} from 'firebase/auth';
+import { checkEmailAllowed } from '../checkEmailInSheet';
 
-interface AuthState {
-  firebaseUser: User | null;
-  profile: UserProfile | null;
+interface AuthContextType {
+  profile: any | null;
   loading: boolean;
   error: string | null;
-  isDemoMode: boolean;
-}
-
-interface AuthContextType extends AuthState {
-  loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
-  loginAsDemo: (role: 'admin' | 'teacher' | 'student') => void;
-  logout: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEMO_EMAILS: Record<string, string> = {
-  admin: 'admin@university.edu',
-  teacher: 'teacher@university.edu',
-  student: 'student@university.edu',
-};
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    firebaseUser: null,
-    profile: null,
-    loading: true,
-    error: null,
-    isDemoMode: false,
-  });
-
-  const fetchProfile = useCallback(async (email: string) => {
-    try {
-      const profile = await getUserByEmail(email);
-      setState(prev => ({ ...prev, profile, loading: false, error: null }));
-    } catch {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Failed to load user profile',
-      }));
-    }
-  }, []);
+export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+  const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for persisted demo session
-    const demoRole = sessionStorage.getItem('demo_role');
-    if (demoRole) {
-      const email = DEMO_EMAILS[demoRole] || DEMO_EMAILS.student;
-      fetchProfile(email).then(() => {
-        setState(prev => ({ ...prev, isDemoMode: true }));
-      });
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setState(prev => ({ ...prev, firebaseUser: user, loading: true }));
-        await fetchProfile(user.email || '');
-      } else if (!sessionStorage.getItem('demo_role')) {
-        setState({ firebaseUser: null, profile: null, loading: false, error: null, isDemoMode: false });
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user && user.email) {
+        const allowed = await checkEmailAllowed(user.email);
+        if (!allowed) {
+          await auth.signOut();
+          setProfile(null);
+        } else {
+          setProfile(allowed);
+        }
+      } else {
+        setProfile(null);
       }
+      setLoading(false);
     });
-
-    return unsubscribe;
-  }, [fetchProfile]);
-
-  const loginWithGoogle = async () => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      const result = await signInWithPopup(auth, googleProvider);
-      await fetchProfile(result.user.email || '');
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Google sign-in failed',
-      }));
-    }
-  };
+    return () => unsubscribe();
+  }, []);
 
   const loginWithEmail = async (email: string, password: string) => {
+    setError(null);
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await fetchProfile(result.user.email || '');
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Email sign-in failed',
-      }));
+      const allowed = await checkEmailAllowed(email);
+      if (!allowed) throw new Error("This email is not authorized");
+      await signInWithEmailAndPassword(auth, email, password);
+      setProfile(allowed);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
     }
   };
 
-  const loginAsDemo = (role: 'admin' | 'teacher' | 'student') => {
-    const email = DEMO_EMAILS[role];
-    sessionStorage.setItem('demo_role', role);
-    setState(prev => ({ ...prev, loading: true, isDemoMode: true }));
-    fetchProfile(email);
-  };
-
-  const logout = async () => {
+  const loginWithGoogle = async () => {
+    setError(null);
     try {
-      if (!state.isDemoMode) {
-        await firebaseSignOut(auth);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email!;
+      const allowed = await checkEmailAllowed(email);
+      if (!allowed) {
+        await auth.signOut();
+        throw new Error("This email is not authorized");
       }
-      sessionStorage.removeItem('demo_role');
-      setState({ firebaseUser: null, profile: null, loading: false, error: null, isDemoMode: false });
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        error: err instanceof Error ? err.message : 'Sign out failed',
-      }));
+      setProfile(allowed);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
     }
+  };
+
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ ...state, loginWithGoogle, loginWithEmail, loginAsDemo, logout }}
-    >
+    <AuthContext.Provider value={{ profile, loading, error, loginWithEmail, loginWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth(): AuthContextType {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
-}
+};

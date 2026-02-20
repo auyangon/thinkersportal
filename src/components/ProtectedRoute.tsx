@@ -1,30 +1,23 @@
+// src/components/ProtectedRoute.tsx
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
-interface Props {
-  children: React.ReactNode;
+interface ProtectedRouteProps {
   allowedRoles?: string[];
+  children: React.ReactNode;
 }
 
-export function ProtectedRoute({ children, allowedRoles }: Props) {
-  const { profile, loading, firebaseUser, isDemoMode } = useAuth();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children }) => {
+  const { profile, loading } = useAuth();
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <div>Loading...</div>;
 
-  if (!firebaseUser && !isDemoMode) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!profile) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!profile) return <Navigate to="/login" replace />;
 
   if (allowedRoles && !allowedRoles.includes(profile.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
-}
+};

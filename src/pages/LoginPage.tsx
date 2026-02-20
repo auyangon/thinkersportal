@@ -1,148 +1,114 @@
+// src/pages/LoginPage.tsx
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Shield, BookOpen, Users } from 'lucide-react';
-import { cn } from '@/utils/cn';
+import { GraduationCap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export function LoginPage() {
-  const { profile, loading, error, loginWithGoogle, loginWithEmail, loginAsDemo, isDemoMode } = useAuth();
+  const { profile, loading, error, loginWithEmail, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (profile && (isDemoMode || true)) {
+  // If already logged in, go to dashboard
+  if (profile) {
     return <Navigate to="/dashboard" replace />;
   }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await loginWithEmail(email, password);
+    try {
+      await loginWithEmail(email, password);
+    } catch (err) {
+      console.error(err);
+    }
     setIsSubmitting(false);
   };
 
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
-    await loginWithGoogle();
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      console.error(err);
+    }
     setIsSubmitting(false);
   };
 
-  const demoCards = [
-    { role: 'student' as const, label: 'Student', desc: 'View grades, attendance & exams', icon: <BookOpen size={20} />, color: 'from-sky-400 to-blue-500', bg: 'bg-sky-50 border-sky-100' },
-    { role: 'teacher' as const, label: 'Teacher', desc: 'Manage classes & mark attendance', icon: <Users size={20} />, color: 'from-emerald-400 to-teal-500', bg: 'bg-emerald-50 border-emerald-100' },
-    { role: 'admin' as const, label: 'Admin', desc: 'Full system access & analytics', icon: <Shield size={20} />, color: 'from-violet-400 to-purple-500', bg: 'bg-violet-50 border-violet-100' },
-  ];
-
   return (
     <div className="flex min-h-screen">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950">
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 h-72 w-72 rounded-full bg-navy-600/20 blur-3xl" />
-          <div className="absolute bottom-20 right-20 h-96 w-96 rounded-full bg-navy-500/10 blur-3xl" />
-          <div className="absolute top-1/2 left-1/3 h-48 w-48 rounded-full bg-amber-500/5 blur-3xl" />
-        </div>
-        <div className="relative z-10 flex flex-col justify-between p-12">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-              <GraduationCap size={26} className="text-white" />
+      {/* Left Branding Panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950 p-12 text-white">
+        <div>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
+              <GraduationCap size={26} />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">Thinkers' Portal</h1>
-              <p className="text-[11px] text-navy-300 font-medium">American University of Yangon</p>
+              <h1 className="text-lg font-bold">Thinkers' Portal</h1>
+              <p className="text-xs font-medium">American University of Yangon</p>
             </div>
           </div>
-          <div className="space-y-6">
-            <div className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-semibold text-amber-300 border border-amber-500/20">
-              🎓 AUY Official Portal
-            </div>
-            <h2 className="text-4xl font-bold leading-tight text-white">
-              Think Beyond.<br />Lead Forward.
-            </h2>
-            <p className="max-w-md text-base leading-relaxed text-navy-200">
-              Welcome to the American University of Yangon's integrated portal. 
-              Manage your academics, track attendance, view results, and stay connected — all in one place.
-            </p>
-            <div className="flex gap-8 pt-4">
-              {[
-                { n: '342+', l: 'Active Users' },
-                { n: '36', l: 'Courses' },
-                { n: '82%', l: 'Avg Attendance' },
-              ].map(s => (
-                <div key={s.l}>
-                  <p className="text-2xl font-bold text-white">{s.n}</p>
-                  <p className="text-xs text-navy-300">{s.l}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <p className="text-xs text-navy-400">© 2025 American University of Yangon. All rights reserved.</p>
+          <h2 className="text-4xl font-bold leading-tight mb-4">
+            Think Beyond.<br />Lead Forward.
+          </h2>
+          <p className="text-sm text-white/70">
+            Welcome to the AUY portal.WUahahahaha Manage academics, track attendance, view results, and stay connected.
+          </p>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="flex w-full items-center justify-center bg-gradient-to-br from-slate-50 via-white to-stone-50 px-6 lg:w-1/2">
-        <div className="w-full max-w-md space-y-8 animate-fade-in">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex flex-col items-center gap-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-navy-600 to-navy-800 shadow-lg shadow-navy-200">
-              <GraduationCap size={24} className="text-white" />
-            </div>
-            <h1 className="text-lg font-bold text-navy-900">Thinkers' Portal</h1>
-            <p className="text-[11px] text-slate-400">American University of Yangon</p>
-          </div>
+      {/* Right Login Panel */}
+      <div className="flex w-full items-center justify-center bg-slate-50 px-6 lg:w-1/2">
+        <div className="w-full max-w-md space-y-8">
+          <h2 className="text-2xl font-bold">Welcome back</h2>
+          <p className="text-sm text-slate-500">Sign in to access your AUY portal</p>
 
-          <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
-            <p className="mt-1 text-sm text-slate-500">Sign in to access your AUY portal</p>
-          </div>
+          {error && <div className="p-3 rounded-xl bg-red-50 text-red-600">{error}</div>}
 
-          {error && (
-            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Email Form */}
+          {/* Email/Password Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Email</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Email</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
+                  placeholder="you@auy.edu.mm"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@auy.edu.mm"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-300 outline-none transition-all focus:border-navy-400 focus:ring-2 focus:ring-navy-100"
+                  className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-300 focus:border-navy-400 focus:ring-2 focus:ring-navy-100"
                 />
               </div>
             </div>
+
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-11 text-sm text-slate-800 placeholder:text-slate-300 outline-none transition-all focus:border-navy-400 focus:ring-2 focus:ring-navy-100"
+                  className="w-full border rounded-xl py-3 pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-300 focus:border-navy-400 focus:ring-2 focus:ring-navy-100"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
+
             <button
               type="submit"
               disabled={isSubmitting || loading}
-              className="w-full rounded-xl bg-gradient-to-r from-navy-600 to-navy-800 py-3 text-sm font-semibold text-white shadow-lg shadow-navy-200 transition-all hover:shadow-xl hover:shadow-navy-300 disabled:opacity-50"
+              className="w-full rounded-xl bg-gradient-to-r from-navy-600 to-navy-800 py-3 text-white font-semibold disabled:opacity-50"
             >
               {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
@@ -151,50 +117,18 @@ export function LoginPage() {
           {/* Divider */}
           <div className="flex items-center gap-4">
             <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs font-medium text-slate-400">or</span>
+            <span className="text-xs text-slate-400">or</span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          {/* Google Login */}
+          {/* Google Sign In */}
           <button
             onClick={handleGoogleLogin}
             disabled={isSubmitting || loading}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 border border-slate-200 rounded-xl bg-white py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
             Continue with Google
           </button>
-
-          {/* Demo Cards */}
-          <div className="space-y-3">
-            <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-400">Quick Demo Access</p>
-            <div className="grid grid-cols-3 gap-3">
-              {demoCards.map(card => (
-                <button
-                  key={card.role}
-                  onClick={() => loginAsDemo(card.role)}
-                  disabled={loading}
-                  className={cn(
-                    'group flex flex-col items-center gap-2 rounded-2xl border p-4 transition-all hover:shadow-lg hover:scale-[1.02] disabled:opacity-50',
-                    card.bg
-                  )}
-                >
-                  <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm', card.color)}>
-                    {card.icon}
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-slate-700">{card.label}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{card.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
